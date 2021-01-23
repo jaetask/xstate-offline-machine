@@ -17,7 +17,8 @@
     "lint": "tsdx lint",
     "prepare": "tsdx build",
     "size": "size-limit",
-    "analyze": "size-limit --why"
+    "analyze": "size-limit --why",
+    "publish": "npm run np"
   },
   "peerDependencies": {
     "xstate": "^4.16.0"
@@ -54,7 +55,5 @@
     "tslib": "^2.1.0",
     "typescript": "^4.1.3"
   },
-  "dependencies": {
-    "np": "^7.2.0"
-  }
+  "dependencies": {}
 }
