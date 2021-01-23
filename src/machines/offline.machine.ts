@@ -138,11 +138,11 @@ interface OfflineContext {
 }
 
 type OfflineEvent =
+  | { type: 'FORCE_OFFLINE' }
+  | { type: 'OFFLINE_STATUS' }
   | { type: 'OFFLINE' }
   | { type: 'ONLINE' }
-  | { type: 'UNDO_FORCE_OFFLINE' }
-  | { type: 'FORCE_OFFLINE' }
-  | { type: 'OFFLINE_STATUS' };
+  | { type: 'UNDO_FORCE_OFFLINE' };
 
 const isOfflineMachine = Machine<OfflineContext, OfflineStateSchema, OfflineEvent>(
   buildOfflineMachine({}),
