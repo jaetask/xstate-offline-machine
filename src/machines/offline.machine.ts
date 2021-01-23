@@ -22,6 +22,11 @@ interface BuildOfflineMachineParams {
 
 type BuildOfflineMachineType = (config: BuildOfflineMachineParams) => any;
 
+interface NotifyParent {
+  type: string;
+  isForcedOffline: boolean;
+}
+
 export const buildOfflineMachine: BuildOfflineMachineType = ({
   statusOnlineEventName = 'STATUS_ONLINE',
   statusOfflineEventName = 'STATUS_OFFLINE',
@@ -34,40 +39,44 @@ export const buildOfflineMachine: BuildOfflineMachineType = ({
   },
   states: {
     offline: {
-      entry: sendParent(statusOfflineEventName),
+      entry: sendParent(
+        ({ isForcedOffline }: OfflineContext): NotifyParent => ({ type: statusOfflineEventName, isForcedOffline })
+      ),
       invoke: {
         id: 'checkingIfOnline',
         src: 'offlineService',
       },
       on: {
-        ONLINE: { target: 'online', cond: (c: OfflineContext) => !c.isForcedOffline },
-        UNDO_FORCE_OFFLINE: [
+        INTERNAL_ONLINE: { target: 'online', cond: (c: OfflineContext) => !c.isForcedOffline },
+        OFFLINE_FORCE_OFFLINE_UNDO: [
           {
             target: 'offline',
             actions: [assign({ isForcedOffline: false })],
-            cond: (c: OfflineContext) => !windowNavigator.onLine && c.isForcedOffline,
+            cond: ({ isForcedOffline }: OfflineContext) => !windowNavigator.onLine && isForcedOffline,
           },
           {
             target: 'online',
             actions: [assign({ isForcedOffline: false })],
-            cond: (c: OfflineContext) => windowNavigator.onLine && c.isForcedOffline,
+            cond: ({ isForcedOffline }: OfflineContext) => windowNavigator.onLine && isForcedOffline,
           },
         ],
       },
     },
     online: {
-      entry: sendParent(statusOnlineEventName),
+      entry: sendParent(
+        ({ isForcedOffline }: OfflineContext): NotifyParent => ({ type: statusOnlineEventName, isForcedOffline })
+      ),
       invoke: {
         id: 'checkingIfOffline',
         src: 'onlineService',
       },
       on: {
-        OFFLINE: 'offline',
+        INTERNAL_OFFLINE: 'offline',
       },
     },
   },
   on: {
-    FORCE_OFFLINE: {
+    OFFLINE_FORCE_OFFLINE: {
       target: 'offline',
       actions: assign({
         isForcedOffline: true,
@@ -75,11 +84,15 @@ export const buildOfflineMachine: BuildOfflineMachineType = ({
     },
     OFFLINE_STATUS: [
       {
-        actions: sendParent(statusOnlineEventName),
+        actions: sendParent(
+          ({ isForcedOffline }: OfflineContext): NotifyParent => ({ type: statusOnlineEventName, isForcedOffline })
+        ),
         cond: (_: any, __: any, meta: MetaStateValue) => meta?.state?.value === 'online',
       },
       {
-        actions: sendParent(statusOfflineEventName),
+        actions: sendParent(
+          ({ isForcedOffline }: OfflineContext): NotifyParent => ({ type: statusOfflineEventName, isForcedOffline })
+        ),
         cond: (_: any, __: any, meta: MetaStateValue) => meta?.state?.value === 'offline',
       },
     ],
@@ -107,20 +120,20 @@ export const buildOfflineMachineOptions: BuildOfflineMachineOptionsType = ({
     onlineService: () => (callback: any) => {
       if (windowObj) {
         // prettier-ignore
-        windowObj.addEventListener('offline', () => { callback('OFFLINE') }, { once: true });
+        windowObj.addEventListener('offline', () => { callback('INTERNAL_OFFLINE') }, { once: true });
       }
     },
     offlineService: (context: OfflineContext) => (callback: any) => {
       // Ensure that we are in sync with the current navigator status i.e on machine load
       // ( if we are not forced offline )
       if (!context.isForcedOffline && windowNavigator?.onLine) {
-        callback('ONLINE');
+        callback('INTERNAL_ONLINE');
         return;
       }
 
       if (windowObj) {
         // prettier-ignore
-        windowObj.addEventListener('online', () => { callback('ONLINE') }, { once: true });
+        windowObj.addEventListener('online', () => { callback('INTERNAL_ONLINE') }, { once: true });
       }
     },
   },
@@ -138,11 +151,11 @@ interface OfflineContext {
 }
 
 type OfflineEvent =
-  | { type: 'FORCE_OFFLINE' }
-  | { type: 'OFFLINE_STATUS' }
-  | { type: 'OFFLINE' }
-  | { type: 'ONLINE' }
-  | { type: 'UNDO_FORCE_OFFLINE' };
+  | { type: 'INTERNAL_OFFLINE' }
+  | { type: 'INTERNAL_ONLINE' }
+  | { type: 'OFFLINE_FORCE_OFFLINE_UNDO' }
+  | { type: 'OFFLINE_FORCE_OFFLINE' }
+  | { type: 'OFFLINE_STATUS' };
 
 const isOfflineMachine = Machine<OfflineContext, OfflineStateSchema, OfflineEvent>(
   buildOfflineMachine({}),
