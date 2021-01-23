@@ -10,8 +10,8 @@ The machine does this automatically and posts state change messages out to the p
 Install using:
 
 ```bash
-npm install -S xstate-offline-machine
-# or yarn add xstate-offline-machine
+yarn add xstate-offline-machine
+# or npm install -S xstate-offline-machine
 ```
 
 ## Integration
@@ -72,3 +72,7 @@ app.send('INITIALIZE');
 ```
 
 _Note: This is just an example, you can invoke however you want._
+
+## Messages
+
+The `offline` machine sends out
