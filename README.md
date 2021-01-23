@@ -84,7 +84,7 @@ The `offline` machine is much more useful when invoked by a parent. The idea is 
 
 ```js
 import { assign, send, spawn } from 'xstate';
-import isOfflineMachine from './offline.machine';
+import isOfflineMachine from 'xstate-offline-machine';
 
 const { Machine } = require('xstate');
 
@@ -119,3 +119,22 @@ app.send('INITIALIZE');
 ```
 
 _Note: This is just an example, you can invoke however you want._
+
+## Configuration
+
+`buildOfflineMachine` and `buildOfflineMachineOptions` are exported and can be used to configure the machine to suit your needs. If you would like to return different messages to the parent then it can be done like so.
+
+```js
+import { buildOfflineMachine, buildOfflineMachineOptions } from 'xstate-offline-machine';
+
+const isOfflineMachine = Machine(
+  buildOfflineMachine({
+    statusOnlineEventName: 'MY_APP_IS_ONLINE',
+    statusOfflineEventName: 'MY_APP_IS_OFFLINE',
+  }),
+  buildOfflineMachineOptions({})
+);
+// ...
+```
+
+And the app would reecive `MY_APP_IS_ONLINE` and `MY_APP_IS_OFFLINE` events after an `OFFLINE_STATUS` event.
