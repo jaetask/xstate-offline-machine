@@ -1,17 +1,77 @@
 # xstate offline machine
 
 The `offline` machine should be used within a browser to enable offline/online state management.
-It reacts to network state changes (You can force this in devtools) and has the ability to force `offline` for testing apps in an exact state.
+It reacts to network state changes (You can force this in devtools) and has the ability to force `offline` for testing apps in an offline environment.
 
-The machine does this automatically and posts state change messages out to the parent machine.
-
-## Commands
-
-Install using:
+## Installation
 
 ```bash
 yarn add xstate-offline-machine
-# or npm install -S xstate-offline-machine
+```
+
+## States
+
+The offline machine can only ever be in two states: `offline` and `online`, with the additional capability to be forced offline for testing purposes.
+
+![Machine](https://raw.githubusercontent.com/jaetask/xstate-offline-machine/main/docs/machine.png 'Machine')
+
+## Events
+
+### `OFFLINE_STATUS`
+
+This event can be sent at any time and will send the current status back to the parent via a `NotifyParent` event.
+
+### Responses
+
+### `STATUS_ONLINE` when online
+
+Configurable event name sent to parent.
+
+```
+// Example
+app.send('OFFLINE_STATUS'); // ping the offline machine
+
+// offline responds with
+{
+  "type": "STATUS_ONLINE",
+  "isForcedOffline": false
+}
+```
+
+### `STATUS_OFFLINE` when offline
+
+Configurable event name sent to parent.
+
+```
+// Example
+app.send('OFFLINE_STATUS'); // ping the offline machine
+
+// offline responds with
+{
+  "type": "STATUS_OFFLINE",
+  "isForcedOffline": false
+}
+```
+
+### `OFFLINE_FORCE_OFFLINE`
+
+This event can be sent to force the machine into an `offline` state even when online. Very helpful for testing applications under offline circumstances.
+
+Any `offline` or `online` navigator events will be ignored while forced offline.
+
+### `OFFLINE_FORCE_OFFLINE_UNDO`
+
+Disables forcing the machine offline, the machine is realigned into the current `offline` or `online` states depending on the current `navigator.onLine` status
+
+## NotifyParent
+
+All the parent messages are of type `NotifyParent`
+
+```js
+interface NotifyParent {
+  type: string;
+  isForcedOffline: boolean;
+}
 ```
 
 ## Integration
@@ -45,19 +105,6 @@ const appMachine = Machine({
         },
       },
     },
-    ready: {
-      on: {
-        // V5 will allow GLOB matching here
-        '*': [
-          {
-            actions: send((_, event) => event, {
-              to: context => context.offline,
-            }),
-            cond: (c, e) => e.type.startsWith('OFFLINE_'),
-          },
-        ],
-      },
-    },
   },
 });
 ```
@@ -72,7 +119,3 @@ app.send('INITIALIZE');
 ```
 
 _Note: This is just an example, you can invoke however you want._
-
-## Messages
-
-The `offline` machine sends out
